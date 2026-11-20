@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: clinic
-      POSTGRES_PASSWORD: clinic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your .env file}
       POSTGRES_DB: clinic
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -12,26 +12,42 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    # no "ports": the database is only reachable by the API, not from outside
 
   api:
     build: .
+    image: clinic-booking-api:local
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg://clinic:clinic@db:5432/clinic
-      SECRET_KEY: ${SECRET_KEY:-docker-dev-secret-change-me-0123456789abcdef}
-      ADMIN_EMAIL: admin@example.com
-      ADMIN_PASSWORD: AdminPass123
+      DATABASE_URL: postgresql+psycopg://clinic:${POSTGRES_PASSWORD}@db:5432/clinic
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in your .env file}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in your .env file}
     ports:
       - "8000:8000"
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
 
   web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    image: clinic-booking-web:local
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "5173:5173"
+      - "5173:8080"
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
 
 volumes:
   pgdata:

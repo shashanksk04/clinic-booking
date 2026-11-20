@@ -54,23 +54,41 @@ npm run dev                          # http://localhost:5173
 
 ## Run it with Docker
 
-Stop any local servers first (they use the same ports), then:
+Needs Docker Desktop. No secrets live in the repository, so create your own `.env` first:
 
 ```bash
+cp .env.example .env     # then open .env and set your own values (see the comments inside)
 docker compose up --build
 ```
 
-Website: http://localhost:5173 · API docs: http://localhost:8000/docs · Admin: `admin@example.com` / `AdminPass123`
+Website: http://localhost:5173 · API docs: http://localhost:8000/docs · Admin: the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from your `.env`
 
-## Tests
+Stop any local servers first (they use the same ports). `docker compose down -v` stops everything and deletes the database volume.
+What makes the containers safer is explained in [DEVOPS.md](DEVOPS.md).
+
+## Tests and code quality
 
 ```bash
-python -m pytest -v
+python -m pytest -v --cov --cov-fail-under=85    # 30 tests + coverage gate
+ruff check .                                     # lint
+pip-audit -r requirements.txt                    # known vulnerabilities in Python packages
 ```
 
-30 automated tests run against a separate `clinic_test` database (each test starts with empty tables).
+The tests run against a separate `clinic_test` database (each test starts with empty tables).
 They cover auth, roles, slot overlap rules, booking, payment, cancellation, auto-expiry, and concurrency.
-GitHub Actions runs them on every push, together with a production build of the frontend.
+
+## CI/CD pipeline
+
+GitHub Actions runs on every push and pull request (`.github/workflows/ci.yml`):
+
+| Stage | What it checks |
+|---|---|
+| backend | ruff lint, 30 tests against PostgreSQL, coverage of at least 85%, pip-audit |
+| frontend | TypeScript type-check, production build, npm audit |
+| docker | hadolint on both Dockerfiles, builds the images, starts the whole stack and smoke-tests it, Trivy image scan |
+| publish | on `main` only: pushes the images to GitHub Container Registry |
+
+Details, findings and the fixes they led to are in [DEVOPS.md](DEVOPS.md).
 
 ## How the important parts work
 

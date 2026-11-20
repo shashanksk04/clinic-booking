@@ -1,8 +1,12 @@
-.venv
-__pycache__
-.pytest_cache
 .git
 .github
-frontend
-tests
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+.env
 *.md
+tests
+frontend
+docker-compose.yml

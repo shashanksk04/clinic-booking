@@ -97,7 +97,7 @@ def get_current_user(
     try:
         user_id = int(decode_token(token)["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
-        raise unauthorized
+        raise unauthorized from None
 
     user = db.get(User, user_id)
     if user is None or not user.is_active:
@@ -329,7 +329,7 @@ def book_appointment(
     except IntegrityError:
         # The database's unique index caught a double-booking we somehow missed
         db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "Slot is already booked")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Slot is already booked") from None
     db.refresh(appointment)
     return appointment
 

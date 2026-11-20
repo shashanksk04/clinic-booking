@@ -1,4 +1,4 @@
-from datetime import timedelta, timezone
+from datetime import timedelta
 
 from tests.helpers import base_time, book, create_slot, make_user
 

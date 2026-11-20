@@ -1,7 +1,7 @@
 from database import SessionLocal
 from models import User
 from sqlalchemy import select
-from tests.helpers import PASSWORD, base_time, create_slot, login, make_admin, make_user
+from tests.helpers import PASSWORD, base_time, create_slot, make_admin, make_user
 
 
 def test_register_login_and_me(client):

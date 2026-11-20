@@ -1,0 +1,13 @@
+line-length = 120
+exclude = ["frontend", ".venv"]
+
+[lint]
+select = ["E", "F", "W", "B"]
+ignore = ["E501"]   # line length is a style preference, not a bug
+
+[lint.flake8-bugbear]
+# FastAPI's normal pattern is Depends(...) in default arguments. Not a bug here.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "main.require_roles"]
+
+[lint.per-file-ignores]
+"tests/*" = ["E731"]
