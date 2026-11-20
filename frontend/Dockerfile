@@ -12,7 +12,14 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # ---- Stage 2: serve the finished files (no Node, no source code, non-root) ----
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
+
+# Install the latest security patches for the operating system packages,
+# then go back to the unprivileged user that nginx runs as.
+USER root
+RUN apk upgrade --no-cache
+USER 101
+
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
