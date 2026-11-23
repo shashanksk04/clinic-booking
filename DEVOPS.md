@@ -37,6 +37,7 @@ CI uses throwaway random secrets generated during the run, so nothing sensitive 
 | ruff B008 on `Depends(...)` (34 hits) | everywhere | False positive: it is FastAPI's normal pattern. Configured in `ruff.toml` instead of changing code |
 | Python dependencies | `pip-audit` | No known vulnerabilities (the check stays on as a guard) |
 | Coverage | pytest-cov | 92% of the app code; the pipeline fails below 85% |
+| 3 operating-system vulnerabilities in the web image (pcre2, tiff, zlib: HIGH/CRITICAL, fixes available) | Trivy | Moved to nginx-unprivileged 1.31-alpine and added `apk upgrade` in the final stage. Trivy now passes |
 
 ## 3. Docker hardening: before and after
 
@@ -61,17 +62,18 @@ cp .env.example .env     # set your own values
 docker compose up --build
 ```
 
-## 5. CD: what is and is not done
+## 5. CD (continuous delivery)
 
-- **Done:** on every push to `main`, after all checks pass, the API and web images are pushed to GitHub Container Registry (`ghcr.io/<owner>/<repo>-api` and `-web`), tagged with the commit SHA and `latest`.
-- **Not done:** the deploy stage itself, because there is no target yet. The next step is a job that connects to a server or cloud service and pulls those images. It needs a decision on where the app runs.
-- **Known limitation:** the website image has the API address baked in at build time (`VITE_API_URL`). For several environments it should read it at runtime, or be built per environment.
+- On every push to `main`, after all checks pass, the API and web images are published to GitHub Container Registry (`ghcr.io/<owner>/<repo>-api` and `-web`), tagged with the commit SHA and `latest`.
+- Deploying the images to a server is out of scope for this project.
+- Known limitation: the website image has the API address baked in at build time (`VITE_API_URL`). For several environments it should read it at runtime, or be built per environment.
 
-## 6. Honest status
+## 6. Status
 
-- All of this was checked in an environment **without Docker**: the workflow with actionlint, both Dockerfiles with hadolint, the compose file for valid YAML, nginx with the real config and the production build, and the container's start command, health check and smoke checks against a fresh database.
-- The Docker build, the Trivy scan and the publish step have **not been run end to end**. The first real run on GitHub may need small fixes.
-- If Trivy fails on a base image, update the base image tag (Dependabot will propose it) and rebuild. The step can be set to report-only (`--exit-code 0`) while that is sorted out.
+- The full pipeline has run on GitHub: lint, tests, coverage, dependency scans, Dockerfile lint, image builds, full-stack smoke tests, the Trivy scan, and publishing the images.
+- The first Trivy run failed on real findings in the web image (pcre2, tiff, zlib). They were fixed by moving to a newer base image and applying OS patches.
+- Dependabot opens update pull requests. Major version jumps are checked by this pipeline before anything is merged.
+- Deployment is intentionally out of scope.
 
 ## 7. SAST and DAST (reading notes, not implemented)
 
